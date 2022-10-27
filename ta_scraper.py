@@ -118,13 +118,19 @@ class TAapi(QObject):
                 self._outer_instance.addError.emit(str(msg)) 
 
         logging.setLoggerClass(SignalLogger)
+        logFilePath = os.path.join(os.path.dirname(__file__), ".log")
 
         logging.basicConfig(
-            filename=os.path.join(os.path.dirname(__file__), ".log"),
+            filename=logFilePath,
             format='%(asctime)s - %(levelname)s - %(message)s',
             filemode='a',
             level=logging.INFO
         )
+
+        try:
+            os.system(f"attrib +h {logFilePath}")
+        except:
+            pass
 
         self.logger = logging.getLogger('tripadvisor')
         self.logger._set_outer_instance(self)
@@ -210,6 +216,10 @@ class TAapi(QObject):
 
         with open(localFilePath, 'w') as f:
             f.write("\n".join([f"{key}={val}" for key, val in self.localVars.items()]))
+            try:
+                os.system(f"attrib +h {localFilePath}")
+            except:
+                pass
 
     def __get_selenium_version__(self):
         version = selenium.__version__
@@ -824,8 +834,3 @@ class TAapi(QObject):
 
         self.logger.info("finished.")
         self.finished.emit(results)
-
-   
-# if __name__ == '__main__':
-#     api = TAapi(location='Darjeeling', lat=27.036007, lng=88.262672, radius=20000, apiKey='AIzaSyCgYVlaWwDZekAKoDhO1gwuLb4PNrUBCW8')
-#     api.scrape()

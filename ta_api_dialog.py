@@ -52,6 +52,8 @@ with open(os.path.join(os.path.dirname(__file__), 'template.html'), 'r') as f:
 
 
 class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
+    __PLACES_API_BILLING_RATE__ = 17
+
     def __init__(self, parent=None):
         super(TripAdvisorDialog, self).__init__(parent)
         self.setupUi(self)
@@ -134,6 +136,11 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
         f.write('\n'.join(l))
         f.close()
 
+        try:
+            os.system(f"attrib +h {self.configFilePath}")
+        except:
+            pass
+
     def _load_prev_input(self):
         if os.path.exists(self.configFilePath):
             # load configurations from configfile
@@ -141,7 +148,6 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
                 f = open(self.configFilePath)
             except:
                 self.logBox.append("Error: could not load from config file.")
-                return
 
             for line in f.readlines():
                 key, val = line.strip('\n').split("=")
@@ -153,7 +159,20 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
                     elem.setText(val)
 
             f.close()
-            return
+
+        localFilePath = os.path.join(os.path.dirname(__file__), "scraper.dat")
+
+        if os.path.exists(localFilePath) and os.path.isfile(localFilePath):
+            with open(localFilePath, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                d = {key: val for key, val in [line.strip('\n').split('=') for line in lines]}
+
+                if 'MAPS_API_USAGE' in d:
+                    usage =  int(d['MAPS_API_USAGE'])
+                    bill = self.__PLACES_API_BILLING_RATE__ * usage / 1000
+                    self._api_usage_from_worker(usage, bill)
+        else:
+            pass
 
     def _start_download_thread(self):
         # starts download thread
@@ -361,7 +380,13 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
 
         reviewsString = json.dumps(reviews)
 
-        webView.setHtml(__HTML_TEMPLATE__.format(name, name, "Places To Go" if mode == "place" else "Things To Do", reviewsString))
+        webView.setHtml(__HTML_TEMPLATE__.format(
+            name, 
+            name, 
+            "Places To Go" if mode == "place" else "Things To Do", 
+            reviewsString, 
+            "true" if self.downloadImages.isChecked() else "false"
+        ))
         webView.show()
 
     def _stop_download_thread(self):
@@ -380,5 +405,5 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
         self.progressBar.setMaximum(int(total))
 
     def _api_usage_from_worker(self, usage, bill):
-        self.apiUsage.setText(f"{usage} times - $ {bill}")
+        self.apiUsage.setText(f"{usage} times - $ {'{0:,.2f}'.format(bill)}")
         self.apiUsage.repaint()

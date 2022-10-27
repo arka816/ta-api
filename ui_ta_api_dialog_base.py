@@ -77,7 +77,7 @@ class Ui_TripAdvisorDialogBase(object):
         self.label_8.setGeometry(QtCore.QRect(20, 640, 131, 31))
         self.label_8.setObjectName("label_8")
         self.apiUsage = QtWidgets.QLabel(TripAdvisorDialogBase)
-        self.apiUsage.setGeometry(QtCore.QRect(160, 640, 91, 31))
+        self.apiUsage.setGeometry(QtCore.QRect(160, 640, 181, 31))
         self.apiUsage.setText("")
         self.apiUsage.setObjectName("apiUsage")
         self.closeWindows = QtWidgets.QPushButton(TripAdvisorDialogBase)
