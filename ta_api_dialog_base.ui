@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>541</width>
-    <height>681</height>
+    <height>708</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -112,7 +112,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Lat</string>
+    <string>Latitude</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_5">
@@ -125,14 +125,14 @@
     </rect>
    </property>
    <property name="text">
-    <string>Lng</string>
+    <string>Longitude</string>
    </property>
   </widget>
   <widget class="QCheckBox" name="downloadImages">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>270</y>
+     <y>320</y>
      <width>341</width>
      <height>41</height>
     </rect>
@@ -145,9 +145,9 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>310</y>
+     <y>361</y>
      <width>501</width>
-     <height>192</height>
+     <height>171</height>
     </rect>
    </property>
   </widget>
@@ -155,7 +155,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>510</y>
+     <y>540</y>
      <width>251</width>
      <height>41</height>
     </rect>
@@ -168,7 +168,7 @@
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>510</y>
+     <y>540</y>
      <width>251</width>
      <height>41</height>
     </rect>
@@ -227,7 +227,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>560</y>
+     <y>590</y>
      <width>521</width>
      <height>23</height>
     </rect>
@@ -240,7 +240,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>640</y>
+     <y>670</y>
      <width>131</width>
      <height>31</height>
     </rect>
@@ -253,7 +253,7 @@
    <property name="geometry">
     <rect>
      <x>160</x>
-     <y>640</y>
+     <y>670</y>
      <width>181</width>
      <height>31</height>
     </rect>
@@ -266,7 +266,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>590</y>
+     <y>620</y>
      <width>251</width>
      <height>41</height>
     </rect>
@@ -279,13 +279,59 @@
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>590</y>
+     <y>620</y>
      <width>251</width>
      <height>41</height>
     </rect>
    </property>
    <property name="text">
     <string>REMOVE LAYERS</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_9">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>260</y>
+     <width>151</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Maximum Places</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="maxPlaces">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>260</y>
+     <width>101</width>
+     <height>41</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_10">
+   <property name="geometry">
+    <rect>
+     <x>270</x>
+     <y>260</y>
+     <width>161</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Maximum Reviews</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="maxReviews">
+   <property name="geometry">
+    <rect>
+     <x>430</x>
+     <y>260</y>
+     <width>101</width>
+     <height>41</height>
+    </rect>
    </property>
   </widget>
  </widget>

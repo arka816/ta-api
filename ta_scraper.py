@@ -27,6 +27,8 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
 from subprocess import CREATE_NO_WINDOW
 
+from webdriver_manager.chrome import ChromeDriverManager
+
 from pyjsparser import parse 
 
 from db import DBManager
@@ -34,7 +36,7 @@ from db import DBManager
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 
 
-DRIVER_VERSION = 105
+DRIVER_VERSION = 107
 
 
 op = webdriver.ChromeOptions()
@@ -82,7 +84,7 @@ class TAapi(QObject):
     REVIEWS_MAX_PAGES = 1
     RESULTS_MAX_PAGES = 1
 
-    def __init__(self, location, lat, lng, radius, apiKey, dbName, tableName):
+    def __init__(self, location, lat, lng, radius, apiKey, dbName, tableName, maxPlaces, maxReviews):
         QObject.__init__(self)
         
         self.location = location
@@ -94,6 +96,9 @@ class TAapi(QObject):
 
         self.dbName = dbName
         self.tableName = tableName
+
+        self.RESULTS_MAX_PAGES = maxPlaces
+        self.REVIEWS_MAX_PAGES = maxReviews
 
         self.running = None
 
@@ -118,7 +123,7 @@ class TAapi(QObject):
                 self._outer_instance.addError.emit(str(msg)) 
 
         logging.setLoggerClass(SignalLogger)
-        logFilePath = os.path.join(os.path.dirname(__file__), ".log")
+        logFilePath = os.path.normpath(os.path.join(os.path.dirname(__file__), ".log"))
 
         logging.basicConfig(
             filename=logFilePath,
@@ -154,8 +159,10 @@ class TAapi(QObject):
 
 
         # select best version for selenium webdriver
+        # TODO: fix this in future updates
+
         self.selenium_version = self.__get_selenium_version__()
-        self.driver_version = DRIVER_VERSION
+        self.driver_version =DRIVER_VERSION
 
         try:
             if self.selenium_version == 3:
@@ -185,6 +192,25 @@ class TAapi(QObject):
         else:
             self.logger.info(f"loaded chromedriver version {self.driver_version}")
 
+        # self.selenium_version = self.__get_selenium_version__()
+
+        # try:
+        #     if self.selenium_version == 3:
+        #         self.driver = webdriver.Chrome(
+        #             ChromeDriverManager().install(), 
+        #             options=op
+        #         )
+        #     elif self.selenium_version == 4:
+        #         chromeService = Service(ChromeDriverManager().install())
+        #         chromeService.creationflags = CREATE_NO_WINDOW
+        #         self.driver = webdriver.Chrome(service=chromeService, options=op)
+        # except:
+        #     self.__cleanup__()
+        #     self.logger.error("error loading chromedriver", exc_info=True)
+        # else:
+        #     self.logger.info(f"loaded chromedriver version")
+
+
     def __cleanup__(self):
         self.logger.info("cleaning up")
 
@@ -198,10 +224,13 @@ class TAapi(QObject):
             del self.driver
 
         # kill any stray chromedriver instances forcefully
-        os.system(f"taskkill /IM chromedriver_v{self.driver_version}.exe /F")
+        if hasattr(self, 'driver_version'):
+            os.system(f"taskkill /IM chromedriver_v{self.driver_version}.exe /F")
+        else:
+            os.system(f"taskkill /IM chromedriver.exe /F")
 
     def __read_local_vars__(self):
-        localFilePath = os.path.join(os.path.dirname(__file__), "scraper.dat")
+        localFilePath = os.path.normpath(os.path.join(os.path.dirname(__file__), "scraper.dat"))
 
         if os.path.exists(localFilePath) and os.path.isfile(localFilePath):
             with open(localFilePath, 'r', encoding='utf-8') as f:
@@ -211,11 +240,23 @@ class TAapi(QObject):
             return dict()
     
     def __store_local_vars__(self):
-        localFilePath = os.path.join(os.path.dirname(__file__), "scraper.dat")
+        localFilePath = os.path.normpath(os.path.join(os.path.dirname(__file__), "scraper.dat"))
         self.localVars['TIMESTAMP'] = datetime.now().strftime("%d-%m-%Y")
+
+        '''
+            hidden files cannot be read, since createFile system call
+            does support hidden flag but c bindings for open() in python 
+            don't provide us a way to send those flags as parameters
+        '''
+        # unhide file
+        try:
+            os.system(f"attrib -h {localFilePath}")
+        except:
+            pass
 
         with open(localFilePath, 'w') as f:
             f.write("\n".join([f"{key}={val}" for key, val in self.localVars.items()]))
+            # hide file
             try:
                 os.system(f"attrib +h {localFilePath}")
             except:
@@ -721,6 +762,11 @@ class TAapi(QObject):
         #         'name': 'Darjeeling Tea Garden',
         #         'url': 'https://www.tripadvisor.in/Attraction_Review-g304557-d3705683-Reviews-Tea_Garden-Darjeeling_Darjeeling_District_West_Bengal.html',
         #         'page': 1
+        #     },
+        #     {
+        #         'name': 'Darjeeling Toy Train', 
+        #         'url': 'https://www.tripadvisor.in/Attraction_Review-g304557-d3171246-Reviews-Darjeeling_Toy_Train-Darjeeling_Darjeeling_District_West_Bengal.html', 
+        #         'page': 1
         #     }
         # ]
 
@@ -803,15 +849,14 @@ class TAapi(QObject):
             self.__halt_error__()
             return []
 
-        self.logger.info("inserting data to mongodb")
+        self.logger.info("inserting data to mongodb...")
         self.dbm.insert(results)
+        self.logger.info("inserted data to mongodb")
 
         self.__cleanup__()
 
         # cleanup results
         results = list(filter(self.__clean_results__, results))
-
-        self.logger.info(results)
 
         return results
 

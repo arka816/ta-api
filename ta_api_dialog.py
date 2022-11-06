@@ -83,7 +83,9 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
             "LNG": self.lng,
             "DBNAME": self.dbName,
             "TABLENAME": self.tableName,
-            "DOWNLOAD_IMAGES": self.downloadImages
+            "DOWNLOAD_IMAGES": self.downloadImages,
+            "REVIEWS_MAX_PAGES": self.maxReviews,
+            "RESULTS_MAX_PAGES": self.maxPlaces
         }
 
         self.configFilePath = os.path.join(os.path.dirname(__file__), "ui.dat")
@@ -120,6 +122,17 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
         self._close_browser_windows()
 
     def _save_input(self):
+        '''
+            hidden files cannot be read, since createFile system call
+            does support hidden flag but c bindings for open() in python 
+            don't provide us a way to send those flags as parameters
+        '''
+        # unhide file
+        try:
+            os.system(f"attrib -h {self.configFilePath}")
+        except:
+            pass
+
         try:
             f = open(self.configFilePath, 'w')
         except:
@@ -136,6 +149,7 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
         f.write('\n'.join(l))
         f.close()
 
+        # hide file
         try:
             os.system(f"attrib +h {self.configFilePath}")
         except:
@@ -202,46 +216,68 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
             lng = self.lng.text()
             dbName = self.dbName.text()
             tableName = self.tableName.text()
+            maxPlaces = self.maxPlaces.text()
+            maxReviews = self.maxReviews.text()
 
             if len(apiKey) == 0:
                 QMessageBox.warning(self, "Error", "api key can't be empty")
                 self.apiKey.setFocus()
+                return
 
             if len(keyword) == 0:
                 QMessageBox.warning(self, "Error", "keyword is empty")
                 self.keyword.setFocus()
+                return
 
             if len(dbName) == 0:
                 QMessageBox.warning(self, "Error", "database name is empty")
                 self.dbName.setFocus()
+                return
 
             if len(tableName) == 0:
                 QMessageBox.warning(self, "Error", "table name is empty")
-                self.tableName.setFocus()                
-
+                self.tableName.setFocus() 
+                return
 
             try:
                 radius = int(radius)
             except:
                 number_error(self.radius, "radius")
+                return
 
             try:
                 lat = float(lat)
             except:
                 number_error(self.lat, "latitude")
+                return
 
             try:
                 lng = float(lng)
             except:
                 number_error(self.lng, "longitude")
+                return
 
             if not (-90 <= lat <= 90):
                 lat_error(self.lat)
+                return
 
             if not (-180 <= lng <= 180):
                 long_error(self.lng)
+                return
 
-            if set(['radius', 'lat', 'lng']) < set(locals()) and \
+            try:
+                maxPlaces = int(maxPlaces)
+            except:
+                number_error(self.maxPlaces, "maximum places")
+                return
+
+            try:
+                maxReviews = int(maxReviews)
+            except:
+                number_error(self.maxReviews, "maximum reviews")
+                return
+
+            if set(['radius', 'lat', 'lng', 'maxPlaces', 'maxReviews']) < set(locals()) and \
                 -180 <= lng <= 180 and -90 <= lat <= 90:
                 # no error => set download in progress
                 self.isDownloadInProgress = True
@@ -255,7 +291,7 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.thread = QThread()
 
                 # create worker
-                self.worker = TAapi(keyword, lat, lng, radius, apiKey, dbName, tableName)
+                self.worker = TAapi(keyword, lat, lng, radius, apiKey, dbName, tableName, maxPlaces, maxReviews)
                 self.worker.moveToThread(self.thread)
 
                 self.worker.addMessage.connect(self._message_from_worker)

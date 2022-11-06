@@ -113,16 +113,26 @@ class DBManager:
             except:
                 self.logging.warning("error inserting document.", exc_info=True)
         else:
+            '''
+                insert_many with ordered=false tries to insert each of the documents
+                individually, preferably in parallel. unlike ordered=true, it does not 
+                insert in order. hence, if one insertion fails, the subsequent ones don't.
+
+                11000 - duplicate error code
+            '''
             try:
-                self.collection.insert_many(docs)
+                self.collection.insert_many(docs, ordered=False)
             except pymongo.errors.BulkWriteError as ex:
                 errors = ex.details['writeErrors']
-                errors = filter(lambda x: x['code'] != 11000, errors)
+                duplicateErrors = list(filter(lambda x: x['code'] == 11000, errors))
+                errors = list(filter(lambda x: x['code'] != 11000, errors))
 
                 if len(errors) > 0:
                     self.logging.error("error inserting document(/s).", exc_info=True)
                 else:
-                    self.logging.info(f"{len(errors)} duplicates found. successfully inserted {len(docs) - len(errors)} documents.")
+                    self.logging.info(f"{len(duplicateErrors)} duplicates found. successfully inserted {len(docs) - len(errors) - len(duplicateErrors)} documents.")
+            except Exception as ex:
+                self.logging.error("error inserting documents.", exc_info=True)
         
 
     def query(self, val, col="url"):
