@@ -84,8 +84,8 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
             "DBNAME": self.dbName,
             "TABLENAME": self.tableName,
             "DOWNLOAD_IMAGES": self.downloadImages,
-            "REVIEWS_MAX_PAGES": self.maxReviews,
-            "RESULTS_MAX_PAGES": self.maxPlaces
+            "MAX_REVIEWS": self.maxReviews,
+            "MAX_RESULTS": self.maxPlaces
         }
 
         self.configFilePath = os.path.join(os.path.dirname(__file__), "ui.dat")
@@ -304,6 +304,7 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.worker.finished.connect(self.thread.quit)
                 self.worker.finished.connect(self.worker.deleteLater)
                 self.thread.finished.connect(self.thread.deleteLater)
+
 
                 # start thread
                 self.thread.start()

@@ -14,6 +14,7 @@ import re
 from urllib.parse import urlencode, urlsplit, parse_qs
 import requests
 import json
+import math
 from operator import itemgetter
 
 
@@ -34,6 +35,8 @@ from pyjsparser import parse
 from db import DBManager
 
 from qgis.PyQt.QtCore import QObject, pyqtSignal
+
+from vector import Vector3d
 
 
 DRIVER_VERSION = 107
@@ -81,8 +84,10 @@ class TAapi(QObject):
 
     __IMAGES_MAX_RES__ = 2400
 
-    REVIEWS_MAX_PAGES = 1
-    RESULTS_MAX_PAGES = 1
+    PLACES_MAX = 5
+    REVIEWS_MAX = 50
+
+    EARTH_RADIUS = 6_371_000
 
     def __init__(self, location, lat, lng, radius, apiKey, dbName, tableName, maxPlaces, maxReviews):
         QObject.__init__(self)
@@ -97,8 +102,11 @@ class TAapi(QObject):
         self.dbName = dbName
         self.tableName = tableName
 
-        self.RESULTS_MAX_PAGES = maxPlaces
-        self.REVIEWS_MAX_PAGES = maxReviews
+        self.PLACES_MAX = maxPlaces
+        self.REVIEWS_MAX = maxReviews
+
+        self.PLACES_SO_FAR = 0
+        self.REVIEWS_SO_FAR = 0
 
         self.running = None
 
@@ -141,7 +149,10 @@ class TAapi(QObject):
         self.logger._set_outer_instance(self)
 
         # create a db manager instance
-        self.dbm = DBManager(self.dbName, self.tableName, logging=self.logger)
+        try:
+            self.dbm = DBManager(self.dbName, self.tableName, logging=self.logger)
+        except:
+            self.logger.error("mongodb error", exc_info=True)
 
         # load local variables
         self.localVars = self.__read_local_vars__()
@@ -302,7 +313,7 @@ class TAapi(QObject):
             pass
 
     def __scrape_places_content__(self, page=1):
-        if page > self.RESULTS_MAX_PAGES:
+        if self.PLACES_SO_FAR > self.PLACES_MAX:
             self.logger.warning('result search exceeded max pages limit. aborting search.')
             return []
 
@@ -329,6 +340,7 @@ class TAapi(QObject):
                     'page': page
                 }for place_results_content in place_results_contents
             ]
+            self.PLACES_SO_FAR += len(place_results_urls)
 
         # Checkpoint 5
         if not self.running:
@@ -348,7 +360,7 @@ class TAapi(QObject):
                         "arguments[0].click();",
                         next_button
                     )
-                    return place_results_urls + self.__scrape_places_content__(page = page+1)
+                    return place_results_urls + self.__scrape_places_content__(page=page+1)
                 else:
                     return place_results_urls
             else:
@@ -490,7 +502,7 @@ class TAapi(QObject):
         }
 
     def __scrape_reviews_things__(self, page=1):
-        if page > self.REVIEWS_MAX_PAGES:
+        if self.REVIEWS_SO_FAR > self.REVIEWS_MAX:
             self.logger.warning('reviews search exceeded max pages limit. aborting search.')
             return []
 
@@ -539,6 +551,7 @@ class TAapi(QObject):
                     }
                     for reviewContainer in list(reviewContainers)
                 ]
+                self.REVIEWS_SO_FAR += len(place_reviews)
 
                 # Checkpoint 12
                 if not self.running:
@@ -568,7 +581,7 @@ class TAapi(QObject):
                     return place_reviews
 
     def __scrape_reviews_places__(self, page=1):
-        if page > self.REVIEWS_MAX_PAGES:
+        if self.REVIEWS_SO_FAR > self.REVIEWS_MAX:
             self.logger.warning('reviews search exceeded max pages limit. aborting search.')
             return []
 
@@ -612,6 +625,7 @@ class TAapi(QObject):
                     }
                     for reviewContainer in list(reviewContainers)
                 ]
+                self.REVIEWS_SO_FAR += len(place_reviews)
 
                 # Checkpoint 12
                 if not self.running:
@@ -703,7 +717,35 @@ class TAapi(QObject):
     def __clean_reviews__(self, review):
         return all([val is not None for val in itemgetter('title', 'text', 'month', 'year')(review['metadata'])])
 
+    def __filter_results_coords__(self, result):
+        '''
+            using spherical cosines formula applied on a spherical geodesic as the approximate distance
+            could have used haversine's formula (a bit more numerically robust but theoretically equivalent)
+            does not give exact distance for long distances due to earth being an oblate spheroid
+        '''
+        lat, lng = itemgetter('lat', 'lng')(result['coords'])
+
+        lat1, lng1 = self.lat * math.pi / 180, self.lng * math.pi / 180
+        lat2, lng2 = lat * math.pi / 180, lng * math.pi / 180
+
+        # calculate distance from origin
+        # step 1: convert to cartesian coordinates
+        pos1 = Vector3d(self.EARTH_RADIUS * math.cos(lat1) * math.cos(lng1), self.EARTH_RADIUS * math.cos(lat1) * math.sin(lng1), self.EARTH_RADIUS * math.sin(lat1))
+        pos2 = Vector3d(self.EARTH_RADIUS * math.cos(lat2) * math.cos(lng2), self.EARTH_RADIUS * math.cos(lat2) * math.sin(lng2), self.EARTH_RADIUS * math.sin(lat2))
+
+        # step 2: calculate real angle
+        real_angle = pos1.angle(pos2)
+
+        # d = self.EARTH_RADIUS * real_angle (works pretty good as an approximation)
+        spherical_distance = self.EARTH_RADIUS * real_angle
+
+        # allow 10% tolerance while clipping radius
+        return spherical_distance <= self.radius * 1.1
+
+
     def __clean_results__(self, result):
+        reviews = list(filter(self.__filter_results_coords__, reviews))
+
         name, url, reviews = itemgetter('name', 'url', 'reviews')(result)
         reviews = list(filter(self.__clean_reviews__, reviews))
 

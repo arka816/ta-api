@@ -89,10 +89,7 @@ class DBManager:
             self.collection = self.db[self.tableName]
             self.collection.create_index('url', unique=True)
         except:
-            self.logging.error("mongodb error", exc_info=True)
             sys.exit()
-
-        
 
     def __create_collection__(self, collection_name='reviews'):
         if collection_name not in self.db.list_collection_names():
