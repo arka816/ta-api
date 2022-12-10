@@ -397,8 +397,14 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
         self.logBox.append(f"adding {len(data)} markers")
 
         for row in data:
-            name, url, reviews, mode = itemgetter('name', 'url', 'reviews', 'mode')(row)
-            lat, lng = itemgetter('lat', 'lng')(row['coords'])
+            try:
+                name, url, reviews, mode = itemgetter('name', 'url', 'reviews', 'mode')(row)
+            except:
+                continue
+            try:
+                lat, lng = itemgetter('lat', 'lng')(row['coords'])
+            except:
+                lat, lng = None, None
             marker = QgsFeature()
             marker.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(lng, lat)))
             marker.setAttributes([
@@ -413,6 +419,8 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.markerLayer.commitChanges()
         QgsProject.instance().addMapLayer(self.markerLayer)
+
+        self.logBox.append(f"commited {len(data)} markers")
 
         # add selection handler
         self.markerLayer.selectionChanged.connect(self._handle_feature_selection)
