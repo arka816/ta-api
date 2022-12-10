@@ -1,7 +1,17 @@
+# -*- coding: utf-8 -*-
+
 '''
     mongodb interface for storing, caching and retrieving caches
     assumes tha mongodb is installed
 '''
+
+__author__ = 'arka'
+
+__license__ = "MIT"
+__version__ = "1.1.0"
+__maintainer__ = "Arkaprava Ghosh"
+__email__ = "arkaprava.mail@gmail.com"
+__status__ = "Development"
 
 import sys
 import pymongo

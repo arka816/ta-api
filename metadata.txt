@@ -6,14 +6,14 @@
 name=TripAdvisor API
 qgisMinimumVersion=3.0
 description=this plugin loads reviews from tripadvisor via scraping and geotags them
-version=0.1
+version=1.1.0
 author=Arka
 email=arkaprava.mail@gmail.com
 
 about=Scrapes reviews and images for places and tourist attractions from tourist advisor headlessly, geotags them using Google Places API and renders them onto a vector layer with popup-enabled markers.
 
 tracker=http://bugs
-repository=http://repo
+repository=https://github.com/arka816/ta-api
 # End of mandatory metadata
 
 # Recommended items:
@@ -29,7 +29,7 @@ homepage=http://homepage
 category=Plugins
 icon=icon.png
 # experimental flag
-experimental=False
+experimental=True
 
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False

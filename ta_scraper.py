@@ -1,9 +1,23 @@
+# -*- coding: utf-8 -*-
+
 # pylint: disable=fixme
 # pylint: disable=redefined-outer-name
 # pylint: disable=W0702
 # pylint: disable=line-too-long
 # pylint: disable=invalid-name
 # pylint: disable=E1123
+
+'''
+    scraper class for scraping tripadvisor website for reviews and images
+'''
+
+__author__ = 'arka'
+
+__license__ = "MIT"
+__version__ = "1.1.0"
+__maintainer__ = "Arkaprava Ghosh"
+__email__ = "arkaprava.mail@gmail.com"
+__status__ = "Development"
 
 from datetime import datetime
 import os
@@ -14,6 +28,7 @@ import re
 from urllib.parse import urlencode, urlsplit, parse_qs
 import requests
 import json
+import csv
 import math
 from operator import itemgetter
 
@@ -89,7 +104,7 @@ class TAapi(QObject):
 
     EARTH_RADIUS = 6_371_000
 
-    def __init__(self, location, lat, lng, radius, apiKey, dbName, tableName, maxPlaces, maxReviews):
+    def __init__(self, location, lat, lng, radius, apiKey, dbName, tableName, maxPlaces, maxReviews, csvFilePath):
         QObject.__init__(self)
         
         self.location = location
@@ -107,6 +122,8 @@ class TAapi(QObject):
 
         self.PLACES_SO_FAR = 0
         self.REVIEWS_SO_FAR = 0
+
+        self.csvFilePath = csvFilePath
 
         self.running = None
 
@@ -488,6 +505,7 @@ class TAapi(QObject):
             date = container.find_element(by=By.XPATH, value=".//div[contains(@class, 'TreSq')]/div").text[len("Written"):]
             date, month, year = date.strip().split()
             date = int(date.strip())
+            month = int(month.strip())
             year = int(year.strip())
         except:
             date, month, year = None, None, None
@@ -742,8 +760,8 @@ class TAapi(QObject):
         # allow 10% tolerance while clipping radius
         return spherical_distance <= self.radius * 1.1
 
-
     def __clean_results__(self, result):
+        # filter based on coordinates
         reviews = list(filter(self.__filter_results_coords__, reviews))
 
         name, url, reviews = itemgetter('name', 'url', 'reviews')(result)
@@ -886,6 +904,9 @@ class TAapi(QObject):
         # self.logger.info("dumping data to results.json")
         # json.dump({'results': results}, open(os.path.join(os.path.dirname(__file__), "results.json"), 'w'), indent = 4)
         
+        # cleanup results
+        results = list(filter(self.__clean_results__, results))
+
         # Checkpoint 14
         if not self.running:
             self.__halt_error__()
@@ -895,10 +916,43 @@ class TAapi(QObject):
         self.dbm.insert(results)
         self.logger.info("inserted data to mongodb")
 
-        self.__cleanup__()
+        # Checkpoint 15
+        if not self.running:
+            self.__halt_error__()
+            return []
 
-        # cleanup results
-        results = list(filter(self.__clean_results__, results))
+        with open(self.csvFilePath, 'w') as f:
+            writer = csv.DictWriter(f, fieldnames=[
+                'name', 
+                'url', 
+                'page', 
+                'rating', 
+                'title', 
+                'text', 
+                'date', 
+                'month', 
+                'year', 
+                'mode', 
+                'place_id'
+            ])
+            writer.writeheader()
+
+            for result in results:
+                result['lat'] = result['coords']['lat']
+                result['lng'] = result['coords']['lng']
+
+                del result['coords']
+
+                for review in result['reviews']:
+                    result_copy = result.copy()
+
+                    del result_copy['reviews']
+
+                    result_copy.update(review['metadata']) 
+                    writer.writerow(result_copy)
+
+
+        self.__cleanup__()
 
         return results
 

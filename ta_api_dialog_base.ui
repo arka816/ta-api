@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>541</width>
-    <height>708</height>
+    <height>766</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -132,7 +132,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>320</y>
+     <y>370</y>
      <width>341</width>
      <height>41</height>
     </rect>
@@ -145,9 +145,9 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>361</y>
+     <y>410</y>
      <width>501</width>
-     <height>171</height>
+     <height>191</height>
     </rect>
    </property>
   </widget>
@@ -155,7 +155,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>540</y>
+     <y>610</y>
      <width>251</width>
      <height>41</height>
     </rect>
@@ -168,7 +168,7 @@
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>540</y>
+     <y>610</y>
      <width>251</width>
      <height>41</height>
     </rect>
@@ -227,7 +227,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>590</y>
+     <y>660</y>
      <width>521</width>
      <height>23</height>
     </rect>
@@ -240,7 +240,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>670</y>
+     <y>730</y>
      <width>131</width>
      <height>31</height>
     </rect>
@@ -266,7 +266,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>620</y>
+     <y>690</y>
      <width>251</width>
      <height>41</height>
     </rect>
@@ -279,7 +279,7 @@
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>620</y>
+     <y>690</y>
      <width>251</width>
      <height>41</height>
     </rect>
@@ -332,6 +332,42 @@
      <width>101</width>
      <height>41</height>
     </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_11">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>320</y>
+     <width>131</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Output File</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="csvFilePath">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>320</y>
+     <width>331</width>
+     <height>41</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="csvFilePicker">
+   <property name="geometry">
+    <rect>
+     <x>490</x>
+     <y>320</y>
+     <width>41</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>...</string>
    </property>
   </widget>
  </widget>
