@@ -744,6 +744,9 @@ class TAapi(QObject):
         if 'coords' not in result:
             return True
 
+        if result['coords'] is None:
+            return True
+
         lat, lng = itemgetter('lat', 'lng')(result['coords'])
 
         lat1, lng1 = self.lat * math.pi / 180, self.lng * math.pi / 180
@@ -862,6 +865,8 @@ class TAapi(QObject):
                 result.pop('_id', None)
             else:
                 mode = 'place'
+
+                self.REVIEWS_SO_FAR = 0
 
                 try:
                     self.driver.get(url)
