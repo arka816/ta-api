@@ -741,6 +741,9 @@ class TAapi(QObject):
             could have used haversine's formula (a bit more numerically robust but theoretically equivalent)
             does not give exact distance for long distances due to earth being an oblate spheroid
         '''
+        if 'coords' not in result:
+            return True
+            
         lat, lng = itemgetter('lat', 'lng')(result['coords'])
 
         lat1, lng1 = self.lat * math.pi / 180, self.lng * math.pi / 180
@@ -761,9 +764,6 @@ class TAapi(QObject):
         return spherical_distance <= self.radius * 1.1
 
     def __clean_results(self, result):
-        # filter based on coordinates
-        reviews = list(filter(self.__filter_results_coords, reviews))
-
         name, url, reviews = itemgetter('name', 'url', 'reviews')(result)
         reviews = list(filter(self.__clean_reviews, reviews))
 
@@ -904,6 +904,9 @@ class TAapi(QObject):
         # self.logger.info("dumping data to results.json")
         # json.dump({'results': results}, open(os.path.join(os.path.dirname(__file__), "results.json"), 'w'), indent = 4)
         
+        # filter results based on coordinates and radius
+        results = list(filter(self.__filter_results_coords, results))
+
         # cleanup results
         results = list(filter(self.__clean_results, results))
 
