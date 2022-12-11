@@ -172,7 +172,7 @@ class TAapi(QObject):
             self.logger.error("mongodb error", exc_info=True)
 
         # load local variables
-        self.localVars = self.__read_local_vars__()
+        self.localVars = self.__read_local_vars()
 
         if self.localVars is not None and 'MAPS_API_USAGE' in self.localVars:
             self.mapsApiUsage = int(self.localVars['MAPS_API_USAGE'])
@@ -189,7 +189,7 @@ class TAapi(QObject):
         # select best version for selenium webdriver
         # TODO: fix this in future updates
 
-        self.selenium_version = self.__get_selenium_version__()
+        self.selenium_version = self.__get_selenium_version()
         self.driver_version =DRIVER_VERSION
 
         try:
@@ -199,7 +199,7 @@ class TAapi(QObject):
                 chromeService = Service(os.path.join(os.path.dirname(__file__), 'exe', f"chromedriver_v{self.driver_version}.exe"))
                 chromeService.creationflags = CREATE_NO_WINDOW
                 self.driver = webdriver.Chrome(service=chromeService, options=op)
-            browser_version = self.__get_browser_version__()
+            browser_version = self.__get_browser_version()
 
             if browser_version > self.driver_version:
                 self.driver.close()
@@ -215,12 +215,12 @@ class TAapi(QObject):
                     chromeService.creationflags = CREATE_NO_WINDOW
                     self.driver = webdriver.Chrome(service=chromeService, options=op)
         except:
-            self.__cleanup__()
+            self.__cleanup()
             self.logger.error("error loading chromedriver", exc_info=True)
         else:
             self.logger.info(f"loaded chromedriver version {self.driver_version}")
 
-        # self.selenium_version = self.__get_selenium_version__()
+        # self.selenium_version = self.__get_selenium_version()
 
         # try:
         #     if self.selenium_version == 3:
@@ -233,17 +233,17 @@ class TAapi(QObject):
         #         chromeService.creationflags = CREATE_NO_WINDOW
         #         self.driver = webdriver.Chrome(service=chromeService, options=op)
         # except:
-        #     self.__cleanup__()
+        #     self.__cleanup()
         #     self.logger.error("error loading chromedriver", exc_info=True)
         # else:
         #     self.logger.info(f"loaded chromedriver version")
 
 
-    def __cleanup__(self):
+    def __cleanup(self):
         self.logger.info("cleaning up")
 
         # store local vars
-        self.__store_local_vars__()
+        self.__store_local_vars()
 
         # quit driver
         if hasattr(self, 'driver'):
@@ -257,7 +257,7 @@ class TAapi(QObject):
         else:
             os.system(f"taskkill /IM chromedriver.exe /F")
 
-    def __read_local_vars__(self):
+    def __read_local_vars(self):
         localFilePath = os.path.normpath(os.path.join(os.path.dirname(__file__), "scraper.dat"))
 
         if os.path.exists(localFilePath) and os.path.isfile(localFilePath):
@@ -267,7 +267,7 @@ class TAapi(QObject):
         else:
             return dict()
     
-    def __store_local_vars__(self):
+    def __store_local_vars(self):
         localFilePath = os.path.normpath(os.path.join(os.path.dirname(__file__), "scraper.dat"))
         self.localVars['TIMESTAMP'] = datetime.now().strftime("%d-%m-%Y")
 
@@ -290,11 +290,11 @@ class TAapi(QObject):
             except:
                 pass
 
-    def __get_selenium_version__(self):
+    def __get_selenium_version(self):
         version = selenium.__version__
         return int(version.split('.', maxsplit=1)[0])
 
-    def __get_browser_version__(self):
+    def __get_browser_version(self):
         if 'browserVersion' in self.driver.capabilities:
             version = self.driver.capabilities['browserVersion']
         else:
@@ -302,7 +302,7 @@ class TAapi(QObject):
 
         return int(version.split('.')[0])
 
-    def __scroll_to_end__(self):
+    def __scroll_to_end(self):
         # Get scroll height
         last_height = self.driver.execute_script("return document.body.scrollHeight")
 
@@ -319,7 +319,7 @@ class TAapi(QObject):
                 break
             last_height = new_height
 
-    def __scroll_to_elem__(self, elem):
+    def __scroll_to_elem(self, elem):
         try:
             self.driver.execute_script(
                 "arguments[0].scrollIntoView(true);",
@@ -329,16 +329,16 @@ class TAapi(QObject):
             # self.logger.warning("error in scrolling to element", exc_info=True)
             pass
 
-    def __scrape_places_content__(self, page=1):
+    def __scrape_places_content(self, page=1):
         if self.PLACES_SO_FAR > self.PLACES_MAX:
             self.logger.warning('result search exceeded max pages limit. aborting search.')
             return []
 
-        self.__scroll_to_end__()
+        self.__scroll_to_end()
 
         # Checkpoint 4
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return
 
         try:
@@ -361,7 +361,7 @@ class TAapi(QObject):
 
         # Checkpoint 5
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return
 
         try:
@@ -377,7 +377,7 @@ class TAapi(QObject):
                         "arguments[0].click();",
                         next_button
                     )
-                    return place_results_urls + self.__scrape_places_content__(page=page+1)
+                    return place_results_urls + self.__scrape_places_content(page=page+1)
                 else:
                     return place_results_urls
             else:
@@ -387,48 +387,48 @@ class TAapi(QObject):
             # self.logger.info("no pagination available.", exc_info=True)
             return place_results_urls
 
-    def __scrape_review_for_images_things__(self, container):
+    def __scrape_review_for_images_things(self, container):
         # Checkpoint 11
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return []
         try:
             image_container = container.find_element(by=By.XPATH, value=".//div[contains(@class, 'pDrIj')]")
-            self.__scroll_to_elem__(image_container)
+            self.__scroll_to_elem(image_container)
 
             image_elems = WebDriverWait(image_container, self.__IMAGE_LOAD_WAIT__) \
                 .until(EC.presence_of_all_elements_located((By.TAG_NAME, "img")))
 
-            sources = [self.__upgrade_image_url__(image_elem.get_attribute('src')) for image_elem in image_elems]
+            sources = [self.__upgrade_image_url(image_elem.get_attribute('src')) for image_elem in image_elems]
         except:
             # self.logger.warning("image either not available or error loading image.")
             return []
         else:
             return sources
 
-    def __scrape_review_for_images_places__(self, container):
+    def __scrape_review_for_images_places(self, container):
         # Checkpoint 11
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return []
         try:
             image_container = container.find_element(by=By.XPATH, value=".//div[contains(@class, 'LblVz')]")
-            self.__scroll_to_elem__(image_container)
+            self.__scroll_to_elem(image_container)
 
             image_elems = WebDriverWait(image_container, self.__IMAGE_LOAD_WAIT__) \
                 .until(EC.presence_of_all_elements_located((By.TAG_NAME, "img")))
 
-            sources = [self.__upgrade_image_url__(image_elem.get_attribute('src')) for image_elem in image_elems]
+            sources = [self.__upgrade_image_url(image_elem.get_attribute('src')) for image_elem in image_elems]
         except:
             # self.logger.warning("image either not available or error loading image.")
             return []
         else:
             return sources
 
-    def __scrape_review_for_text_things__(self, container):
+    def __scrape_review_for_text_things(self, container):
         # Checkpoint 10
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return dict()
 
         # find rating
@@ -473,10 +473,10 @@ class TAapi(QObject):
             'year': year
         }
 
-    def __scrape_review_for_text_places__(self, container):
+    def __scrape_review_for_text_places(self, container):
         # Checkpoint 10
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return dict()
         
         # find rating
@@ -519,16 +519,16 @@ class TAapi(QObject):
             'year': year
         }
 
-    def __scrape_reviews_things__(self, page=1):
+    def __scrape_reviews_things(self, page=1):
         if self.REVIEWS_SO_FAR > self.REVIEWS_MAX:
             self.logger.warning('reviews search exceeded max pages limit. aborting search.')
             return []
 
-        self.__scroll_to_end__()
+        self.__scroll_to_end()
 
         # Checkpoint 8
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return []
 
         try:
@@ -540,7 +540,7 @@ class TAapi(QObject):
         else:
             # Checkpoint 9
             if not self.running:
-                self.__halt_error__()
+                self.__halt_error()
                 return []
 
             try:
@@ -564,8 +564,8 @@ class TAapi(QObject):
                 # scrape review title, body and date and images if any
                 place_reviews = [
                     {
-                        'metadata': self.__scrape_review_for_text_things__(reviewContainer),
-                        'images': self.__scrape_review_for_images_things__(reviewContainer)
+                        'metadata': self.__scrape_review_for_text_things(reviewContainer),
+                        'images': self.__scrape_review_for_images_things(reviewContainer)
                     }
                     for reviewContainer in list(reviewContainers)
                 ]
@@ -573,7 +573,7 @@ class TAapi(QObject):
 
                 # Checkpoint 12
                 if not self.running:
-                    self.__halt_error__()
+                    self.__halt_error()
                     return []
 
                 # go to next page
@@ -588,7 +588,7 @@ class TAapi(QObject):
                                 "arguments[0].click();",
                                 next_button
                             )
-                            return place_reviews + self.__scrape_reviews_things__(page=page+1)
+                            return place_reviews + self.__scrape_reviews_things(page=page+1)
                         else:
                             return place_reviews
                     else:
@@ -598,16 +598,16 @@ class TAapi(QObject):
                     # self.logger.info("no pagination available.", exc_info=True)
                     return place_reviews
 
-    def __scrape_reviews_places__(self, page=1):
+    def __scrape_reviews_places(self, page=1):
         if self.REVIEWS_SO_FAR > self.REVIEWS_MAX:
             self.logger.warning('reviews search exceeded max pages limit. aborting search.')
             return []
 
-        self.__scroll_to_end__()
+        self.__scroll_to_end()
 
         # Checkpoint 8
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return []
 
         try:
@@ -638,8 +638,8 @@ class TAapi(QObject):
                 # scrape review title, body and date and images if any
                 place_reviews = [
                     {
-                        'metadata': self.__scrape_review_for_text_places__(reviewContainer),
-                        'images': self.__scrape_review_for_images_places__(reviewContainer)
+                        'metadata': self.__scrape_review_for_text_places(reviewContainer),
+                        'images': self.__scrape_review_for_images_places(reviewContainer)
                     }
                     for reviewContainer in list(reviewContainers)
                 ]
@@ -647,7 +647,7 @@ class TAapi(QObject):
 
                 # Checkpoint 12
                 if not self.running:
-                    self.__halt_error__()
+                    self.__halt_error()
                     return []
 
                 # go to next page
@@ -660,7 +660,7 @@ class TAapi(QObject):
                             "arguments[0].click();",
                             next_button
                         )
-                        return place_reviews + self.__scrape_reviews_places__(page=page+1)
+                        return place_reviews + self.__scrape_reviews_places(page=page+1)
                     else:
                         # self.logger.info("next page button not clickable")
                         return place_reviews
@@ -668,7 +668,7 @@ class TAapi(QObject):
                     # self.logger.info("no pagination available.", exc_info=True)
                     return place_reviews
 
-    def __upgrade_image_url__(self, url):
+    def __upgrade_image_url(self, url):
         try:
             split = urlsplit(url)
             queryParams = dict(parse_qs(split.query))
@@ -684,10 +684,10 @@ class TAapi(QObject):
         except:
             return url 
 
-    def __get_coords__(self, place):
+    def __get_coords(self, place):
         # Checkpoint 13
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return None, None
 
         queryFields = ['geometry', 'place_id']
@@ -732,10 +732,10 @@ class TAapi(QObject):
             self.logger.warning("error fetching location info", exc_info=True)
             return None, None
 
-    def __clean_reviews__(self, review):
+    def __clean_reviews(self, review):
         return all([val is not None for val in itemgetter('title', 'text', 'month', 'year')(review['metadata'])])
 
-    def __filter_results_coords__(self, result):
+    def __filter_results_coords(self, result):
         '''
             using spherical cosines formula applied on a spherical geodesic as the approximate distance
             could have used haversine's formula (a bit more numerically robust but theoretically equivalent)
@@ -760,27 +760,27 @@ class TAapi(QObject):
         # allow 10% tolerance while clipping radius
         return spherical_distance <= self.radius * 1.1
 
-    def __clean_results__(self, result):
+    def __clean_results(self, result):
         # filter based on coordinates
-        reviews = list(filter(self.__filter_results_coords__, reviews))
+        reviews = list(filter(self.__filter_results_coords, reviews))
 
         name, url, reviews = itemgetter('name', 'url', 'reviews')(result)
-        reviews = list(filter(self.__clean_reviews__, reviews))
+        reviews = list(filter(self.__clean_reviews, reviews))
 
         return len(reviews) > 0 and \
                 all([val is not None for val in (name, url)]) and \
                 all([len(val) != 0 for val in (name, url)])
 
-    def __scrape__(self):
+    def __scrape(self):
         try:
             self.driver.get(self.__BASE_URL__)
         except:
-            self.__cleanup__()
+            self.__cleanup()
             self.logger.error(f"chromedriver faced error while loading {self.__BASE_URL__}")
 
         # Checkpoint 1
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return
 
         # type the location in the search bar
@@ -795,7 +795,7 @@ class TAapi(QObject):
 
         # Checkpoint 2
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return
 
         # switch to the things-to-do tab
@@ -811,10 +811,10 @@ class TAapi(QObject):
 
         # Checkpoint 3
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return
 
-        place_results = self.__scrape_places_content__()
+        place_results = self.__scrape_places_content()
 
         # TODO: remove debug statements in prod
         # place_results = [
@@ -838,7 +838,7 @@ class TAapi(QObject):
 
         # Checkpoint 6
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return
 
         for place_result in place_results:
@@ -848,7 +848,7 @@ class TAapi(QObject):
 
             # Checkpoint 7
             if not self.running:
-                self.__halt_error__()
+                self.__halt_error()
                 return
 
             # check cache for url (unique id)
@@ -866,7 +866,7 @@ class TAapi(QObject):
                 try:
                     self.driver.get(url)
                 except:
-                    self.__cleanup__()
+                    self.__cleanup()
                     self.logger.error(f"chromedriver faced error while loading {url}")
 
                 try:
@@ -880,12 +880,12 @@ class TAapi(QObject):
                         self.logger.warning(f"/GET {self.__BASE_URL__} - Loading took too much time. Aborting.", exc_info=True)
                         reviews = []
                     else:
-                        reviews = self.__scrape_reviews_places__()
+                        reviews = self.__scrape_reviews_places()
                 else:
-                    reviews = self.__scrape_reviews_things__()
+                    reviews = self.__scrape_reviews_things()
                     mode = 'todo'
 
-                geometry, place_id = self.__get_coords__(name)
+                geometry, place_id = self.__get_coords(name)
 
             place_result['reviews'] = reviews
             place_result['mode'] = mode
@@ -905,11 +905,11 @@ class TAapi(QObject):
         # json.dump({'results': results}, open(os.path.join(os.path.dirname(__file__), "results.json"), 'w'), indent = 4)
         
         # cleanup results
-        results = list(filter(self.__clean_results__, results))
+        results = list(filter(self.__clean_results, results))
 
         # Checkpoint 14
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return []
 
         self.logger.info("inserting data to mongodb...")
@@ -918,7 +918,7 @@ class TAapi(QObject):
 
         # Checkpoint 15
         if not self.running:
-            self.__halt_error__()
+            self.__halt_error()
             return []
 
         with open(self.csvFilePath, 'w') as f:
@@ -952,12 +952,12 @@ class TAapi(QObject):
                     writer.writerow(result_copy)
 
 
-        self.__cleanup__()
+        self.__cleanup()
 
         return results
 
-    def __halt_error__(self):
-        self.__cleanup__()
+    def __halt_error(self):
+        self.__cleanup()
         self.addMessage.emit("worker halted forcefully")
         self.finished.emit([])
 
@@ -969,7 +969,7 @@ class TAapi(QObject):
 
         self.logger.info("starting run...")
 
-        results = self.__scrape__()
+        results = self.__scrape()
 
         self.running = False
 
