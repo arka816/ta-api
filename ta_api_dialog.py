@@ -28,6 +28,7 @@ import json
 import os
 import sys
 from operator import itemgetter
+import re
 
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 
@@ -253,8 +254,9 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.csvFilePath.setFocus() 
                 return
 
-            if not os.path.exists(csvFilePath) or not os.path.isfile(csvFilePath):
-                QMessageBox.warning(self, "Error", "csv file path does not exist or is not a file")
+            csvFileDir = os.path.dirname(csvFilePath)
+            if not os.path.exists(csvFileDir) or not os.path.isdir(csvFileDir):
+                QMessageBox.warning(self, "Error", "csv file directory does not exist")
                 self.csvFilePath.setFocus() 
                 return
 
