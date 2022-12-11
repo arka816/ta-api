@@ -743,7 +743,7 @@ class TAapi(QObject):
         '''
         if 'coords' not in result:
             return True
-            
+
         lat, lng = itemgetter('lat', 'lng')(result['coords'])
 
         lat1, lng1 = self.lat * math.pi / 180, self.lng * math.pi / 180
@@ -925,7 +925,7 @@ class TAapi(QObject):
             return []
 
         with open(self.csvFilePath, 'w') as f:
-            writer = csv.DictWriter(f, fieldnames=[
+            fieldnames = [
                 'name', 
                 'url', 
                 'page', 
@@ -936,8 +936,11 @@ class TAapi(QObject):
                 'month', 
                 'year', 
                 'mode', 
-                'place_id'
-            ])
+                'place_id',
+                'lat',
+                'lng'
+            ]
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
 
             for result in results:
@@ -946,13 +949,16 @@ class TAapi(QObject):
 
                 del result['coords']
 
+                if '_id' in result:
+                    del result['_id']
+
                 for review in result['reviews']:
                     result_copy = result.copy()
 
                     del result_copy['reviews']
 
                     result_copy.update(review['metadata']) 
-                    writer.writerow(result_copy)
+                    writer.writerow({key : value for key, value in result_copy.items() if key in fieldnames})
 
 
         self.__cleanup()
