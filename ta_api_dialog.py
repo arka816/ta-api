@@ -72,7 +72,7 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
         # disable stop button
         self.stopButton.setEnabled(False)
 
-        self.csvFilePicker.clicked.connecg(self._select_csv_file)
+        self.csvFilePicker.clicked.connect(self._select_csv_file)
         self.startButton.clicked.connect(self._start_download_thread)
         self.stopButton.clicked.connect(self._stop_download_thread)
         self.closeWindows.clicked.connect(self._close_browser_windows)
