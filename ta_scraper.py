@@ -763,6 +763,8 @@ class TAapi(QObject):
         # d = self.EARTH_RADIUS * real_angle (works pretty good as an approximation)
         spherical_distance = self.EARTH_RADIUS * real_angle
 
+        self.logger.info(f"{result['name']} : {spherical_distance} metres")
+
         # allow 10% tolerance while clipping radius
         return spherical_distance <= self.radius * 1.1
 
