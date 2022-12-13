@@ -990,7 +990,7 @@ class TAapi(QObject):
         except:
             self.logging.error("error inserting data into csv file", exc_info=True)
         else:
-            self.logger.info("finishe inserting data to csv file...")
+            self.logger.info("finished inserting data to csv file...")
 
         self.__cleanup()
 
