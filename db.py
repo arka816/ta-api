@@ -64,11 +64,11 @@ class DBManager:
                                 "text": {
                                     'bsonType': 'string'
                                 },
-                                'date': {
+                                'day': {
                                     'bsonType': 'int'
                                 },
                                 "month": {
-                                    'bsonType': 'string'
+                                    'bsonType': 'int'
                                 },
                                 "year": {
                                     'bsonType': 'int'

@@ -476,8 +476,8 @@ class TAapi(QObject):
         try:
             date = container.find_element(by=By.XPATH, value=".//span[contains(@class, 'teHYY')]").text[len("Date of experience:"):]
             month, year = date.strip().split()
-            
-            month = self.MONTH_MAP[month.toLowerCase()]
+
+            month = self.MONTH_MAP[month.lower()]
             year = int(year.strip())
         except:
             month, year = None, None
@@ -521,9 +521,9 @@ class TAapi(QObject):
         try:
             date = container.find_element(by=By.XPATH, value=".//div[contains(@class, 'TreSq')]/div").text[len("Written"):]
             day, month, year = date.strip().split()
-            
+
             day = int(day.strip())
-            month = self.MONTH_MAP[month.toLowerCase()]
+            month = self.MONTH_MAP[month.lower()]
             year = int(year.strip())
         except:
             day, month, year = None, None, None
@@ -856,7 +856,7 @@ class TAapi(QObject):
 
         
         self.logger.info(f"{len(place_results)} results loaded")
-        self.total.emit(len(place_results))
+        self.total.emit(min(len(place_results), self.PLACES_MAX))
 
         results = []
 
@@ -943,49 +943,54 @@ class TAapi(QObject):
 
         self.logger.info("inserting data to mongodb...")
         self.dbm.insert(results)
-        self.logger.info("inserted data to mongodb")
+        self.logger.info("finished inserting data to mongodb")
 
         # Checkpoint 15
         if not self.running:
             self.__halt_error()
             return []
 
-        with open(self.csvFilePath, 'w') as f:
-            fieldnames = [
-                'name', 
-                'url', 
-                'page', 
-                'rating', 
-                'title', 
-                'text', 
-                'day', 
-                'month', 
-                'year', 
-                'mode', 
-                'place_id',
-                'lat',
-                'lng'
-            ]
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
+        self.logger.info("inserting data to csv file...")
+        try:
+            with open(self.csvFilePath, 'w', newline='', encoding='utf-8') as f:
+                fieldnames = [
+                    'name', 
+                    'url', 
+                    'page', 
+                    'rating', 
+                    'title', 
+                    'text', 
+                    'day', 
+                    'month', 
+                    'year', 
+                    'mode', 
+                    'place_id',
+                    'lat',
+                    'lng'
+                ]
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
 
-            for result in results:
-                result['lat'] = result['coords']['lat']
-                result['lng'] = result['coords']['lng']
+                for result in results:
+                    result['lat'] = result['coords']['lat']
+                    result['lng'] = result['coords']['lng']
 
-                del result['coords']
+                    del result['coords']
 
-                if '_id' in result:
-                    del result['_id']
+                    if '_id' in result:
+                        del result['_id']
 
-                for review in result['reviews']:
-                    result_copy = result.copy()
+                    for review in result['reviews']:
+                        result_copy = result.copy()
 
-                    del result_copy['reviews']
+                        del result_copy['reviews']
 
-                    result_copy.update(review['metadata']) 
-                    writer.writerow({key : value for key, value in result_copy.items() if key in fieldnames})
-
+                        result_copy.update(review['metadata']) 
+                        writer.writerow({key : value for key, value in result_copy.items() if key in fieldnames})
+        except:
+            self.logging.error("error inserting data into csv file", exc_info=True)
+        else:
+            self.logger.info("finishe inserting data to csv file...")
 
         self.__cleanup()
 

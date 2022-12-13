@@ -407,17 +407,18 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
                 lat, lng = itemgetter('lat', 'lng')(row['coords'])
             except:
                 lat, lng = None, None
-            marker = QgsFeature()
-            marker.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(lng, lat)))
-            marker.setAttributes([
-                name,
-                lat,
-                lng,
-                url,
-                reviews,
-                mode
-            ])
-            self.markerProvider.addFeatures([marker])
+            else:
+                marker = QgsFeature()
+                marker.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(lng, lat)))
+                marker.setAttributes([
+                    name,
+                    lat,
+                    lng,
+                    url,
+                    reviews,
+                    mode
+                ])
+                self.markerProvider.addFeatures([marker])
 
         self.markerLayer.commitChanges()
         QgsProject.instance().addMapLayer(self.markerLayer)
