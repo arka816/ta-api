@@ -104,6 +104,21 @@ class TAapi(QObject):
 
     EARTH_RADIUS = 6_371_000
 
+    MONTH_MAP = {
+        'january'   : 1,
+        'february'  : 2,
+        'march'     : 3,
+        'april'     : 4,
+        'may'       : 5,
+        'june'      : 6,
+        'july'      : 7,
+        'august'    : 8,
+        'september' : 9,
+        'october'   : 10,
+        'november'  : 11,
+        'december'  : 12
+    }
+
     def __init__(self, location, lat, lng, radius, apiKey, dbName, tableName, maxPlaces, maxReviews, csvFilePath):
         QObject.__init__(self)
         
@@ -461,6 +476,8 @@ class TAapi(QObject):
         try:
             date = container.find_element(by=By.XPATH, value=".//span[contains(@class, 'teHYY')]").text[len("Date of experience:"):]
             month, year = date.strip().split()
+            
+            month = self.MONTH_MAP[month.toLowerCase()]
             year = int(year.strip())
         except:
             month, year = None, None
@@ -503,18 +520,19 @@ class TAapi(QObject):
         # review date
         try:
             date = container.find_element(by=By.XPATH, value=".//div[contains(@class, 'TreSq')]/div").text[len("Written"):]
-            date, month, year = date.strip().split()
-            date = int(date.strip())
-            month = int(month.strip())
+            day, month, year = date.strip().split()
+            
+            day = int(day.strip())
+            month = self.MONTH_MAP[month.toLowerCase()]
             year = int(year.strip())
         except:
-            date, month, year = None, None, None
+            day, month, year = None, None, None
 
         return {
             'rating': rating,
             'title': title,
             'text': text,
-            'date': date,
+            'day': day,
             'month': month,
             'year': year
         }
@@ -733,6 +751,7 @@ class TAapi(QObject):
             return None, None
 
     def __clean_reviews(self, review):
+        # title, text, month and year must be present
         return all([val is not None for val in itemgetter('title', 'text', 'month', 'year')(review['metadata'])])
 
     def __filter_results_coords(self, result):
@@ -766,7 +785,7 @@ class TAapi(QObject):
         self.logger.info(f"{result['name']} : {spherical_distance} metres")
 
         # allow 10% tolerance while clipping radius
-        return spherical_distance <= self.radius * 1.1
+        return spherical_distance <= (self.radius * 1.1)
 
     def __clean_results(self, result):
         name, url, reviews = itemgetter('name', 'url', 'reviews')(result)
@@ -846,7 +865,7 @@ class TAapi(QObject):
             self.__halt_error()
             return
 
-        for place_result in place_results:
+        for place_result in place_results[:self.PLACES_MAX]:
             name = place_result['name']
             url = place_result['url']
             page = place_result['page']
@@ -894,7 +913,7 @@ class TAapi(QObject):
 
                 geometry, place_id = self.__get_coords(name)
 
-            place_result['reviews'] = reviews
+            place_result['reviews'] = reviews[:self.REVIEWS_MAX]
             place_result['mode'] = mode
 
             place_result['place_id'] = place_id
@@ -939,7 +958,7 @@ class TAapi(QObject):
                 'rating', 
                 'title', 
                 'text', 
-                'date', 
+                'day', 
                 'month', 
                 'year', 
                 'mode', 
