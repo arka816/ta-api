@@ -865,6 +865,9 @@ class TAapi(QObject):
             self.__halt_error()
             return
 
+        self.logger.info(self.PLACES_MAX)
+        self.logger.info(self.REVIEWS_MAX)
+
         for place_result in place_results[:self.PLACES_MAX]:
             name = place_result['name']
             url = place_result['url']
@@ -959,7 +962,8 @@ class TAapi(QObject):
                     'page', 
                     'rating', 
                     'title', 
-                    'text', 
+                    'text',
+                    'date', 
                     'day', 
                     'month', 
                     'year', 
@@ -986,6 +990,7 @@ class TAapi(QObject):
                         del result_copy['reviews']
 
                         result_copy.update(review['metadata']) 
+                        result_copy['date'] = f"{result_copy['day']}-{result_copy['month']}-{result_copy['year']}"
                         writer.writerow({key : value for key, value in result_copy.items() if key in fieldnames})
         except:
             self.logging.error("error inserting data into csv file", exc_info=True)
