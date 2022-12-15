@@ -538,7 +538,7 @@ class TAapi(QObject):
         }
 
     def __scrape_reviews_things(self, page=1):
-        if self.REVIEWS_SO_FAR > self.REVIEWS_MAX:
+        if self.REVIEWS_SO_FAR >= self.REVIEWS_MAX:
             self.logger.warning('reviews search exceeded max pages limit. aborting search.')
             return []
 
@@ -617,7 +617,7 @@ class TAapi(QObject):
                     return place_reviews
 
     def __scrape_reviews_places(self, page=1):
-        if self.REVIEWS_SO_FAR > self.REVIEWS_MAX:
+        if self.REVIEWS_SO_FAR >= self.REVIEWS_MAX:
             self.logger.warning('reviews search exceeded max pages limit. aborting search.')
             return []
 
@@ -671,16 +671,25 @@ class TAapi(QObject):
                 # go to next page
                 try:
                     next_button = WebDriverWait(pagination, self.__CLICKABLE_WAIT_TIME__) \
-                        .until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'UCacc')]/a")))
+                        .until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'UCacc')]/a[@aria-label='Next page']")))
 
-                    if next_button.get_attribute('aria-label') == 'Next page':
+                    # if next_button.get_attribute('aria-label') == 'Next page':
+                    #     self.driver.execute_script(
+                    #         "arguments[0].click();",
+                    #         next_button
+                    #     )
+                    #     return place_reviews + self.__scrape_reviews_places(page=page+1)
+                    # else:
+                    #     self.logger.info(f"next page button not clickable {next_button.get_attribute('aria-label')}")
+                    #     return place_reviews
+
+                    if next_button:
                         self.driver.execute_script(
                             "arguments[0].click();",
                             next_button
                         )
                         return place_reviews + self.__scrape_reviews_places(page=page+1)
                     else:
-                        # self.logger.info("next page button not clickable")
                         return place_reviews
                 except:
                     # self.logger.info("no pagination available.", exc_info=True)
@@ -865,9 +874,6 @@ class TAapi(QObject):
             self.__halt_error()
             return
 
-        self.logger.info(self.PLACES_MAX)
-        self.logger.info(self.REVIEWS_MAX)
-
         for place_result in place_results[:self.PLACES_MAX]:
             name = place_result['name']
             url = place_result['url']
@@ -880,7 +886,9 @@ class TAapi(QObject):
 
             # check cache for url (unique id)
             result = self.dbm.query(url)
-            if result is not None:
+
+            # if data is in cache and we have enough reviews
+            if result is not None and 'reviews' in result and len(result['reviews']) >= self.REVIEWS_MAX:
                 mode = result['mode']
                 reviews = result['reviews']
                 place_id = result['place_id']
@@ -978,8 +986,6 @@ class TAapi(QObject):
                 for result in results:
                     result['lat'] = result['coords']['lat']
                     result['lng'] = result['coords']['lng']
-
-                    del result['coords']
 
                     if '_id' in result:
                         del result['_id']

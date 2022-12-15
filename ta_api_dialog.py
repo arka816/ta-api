@@ -72,6 +72,8 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # disable stop button
         self.stopButton.setEnabled(False)
+        self.closeWindows.setEnabled(False)
+        self.removeLayers.setEnabled(False)
 
         self.csvFilePicker.clicked.connect(self._select_csv_file)
         self.startButton.clicked.connect(self._start_download_thread)
@@ -111,6 +113,8 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
             QgsProject.instance().refreshAllLayers()
         except:
             pass
+        finally:
+            self.removeLayers.setEnabled(False)
 
     def _close_browser_windows(self):
         if hasattr(self, 'webViews'):
@@ -119,6 +123,7 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
                     webView.close()
                 except:
                     pass
+        self.closeWindows.setEnabled(False)
 
     def _cleanup(self):
         # save inputs
@@ -198,7 +203,10 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
             pass
 
     def _start_download_thread(self):
-        # starts download thread
+        # start download thread
+
+        self.closeWindows.setEnabled(False)
+        self.removeLayers.setEnabled(False)
 
         self.progressBar.setValue(0)
 
@@ -335,6 +343,8 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
 
                     self.startButton.setEnabled(True)    
                     self.stopButton.setEnabled(False)
+                    self.closeWindows.setEnabled(True)
+                    self.removeLayers.setEnabled(True)
 
                     self.isDownloadInProgress = False
                     self.progressBar.setValue(self.progressBar.maximum())  
@@ -401,11 +411,13 @@ class TripAdvisorDialog(QtWidgets.QDialog, FORM_CLASS):
         for row in data:
             try:
                 name, url, reviews, mode = itemgetter('name', 'url', 'reviews', 'mode')(row)
-            except:
+            except Exception as ex:
+                self.logBox.append(f"could not add marker")
                 continue
             try:
                 lat, lng = itemgetter('lat', 'lng')(row['coords'])
-            except:
+            except Exception as ex:
+                self.logBox.append(f"could not add marker")
                 lat, lng = None, None
             else:
                 marker = QgsFeature()
